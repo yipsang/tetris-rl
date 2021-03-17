@@ -1,0 +1,11 @@
+cloudpickle==1.6.0
+future==0.18.2
+gym==0.18.0
+-e git+git@github.com:yipsang/tetris-rl.git@2eee2605f074b19c0abb7e34b8e597b80e03ce46#egg=gym_matris&subdirectory=gym-matris
+KezMenu==0.2.1
+numpy==1.19.5
+opencv-python==4.5.1.48
+Pillow==7.2.0
+pygame==2.0.1
+pyglet==1.5.0
+scipy==1.5.4
