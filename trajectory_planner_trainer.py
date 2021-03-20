@@ -78,10 +78,9 @@ class TrajectorPlannerTrainer:
                 logging.info("a tetris episode ends")
                 state, reward, done, info = self.env.reset()
 
-            self.log_stat(i, episode_losses, episode_rewards)
-
             self.losses += episode_losses
             self.rewards += episode_rewards
+            self.log_stat(i, episode_losses, episode_rewards)
             episode_losses = []
             episode_rewards = []
 
@@ -109,4 +108,4 @@ class TrajectorPlannerTrainer:
         logging.info("mean loss: {}".format(mean_loss))
         logging.info("mean reward: {}".format(mean_reward))
         logging.info("last reward: {}".format(last_reward))
-        logging.info("overal mean reward {}".format(overall_mean_reward))
+        logging.info("overall mean reward {}".format(overall_mean_reward))
