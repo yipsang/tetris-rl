@@ -64,6 +64,7 @@ class Matris(object):
         it will be placed in `self.matrix`.
         """
 
+        self.num_tetrominoes = 0
         self.next_tetromino = random.choice(list_of_tetrominoes)
         self.set_tetrominoes()
         self.tetromino_rotation = 0
@@ -94,6 +95,7 @@ class Matris(object):
         """
         Sets information for the current and next tetrominos
         """
+        self.num_tetrominoes += 1  # count how many tetrominoes has fallen
         self.current_tetromino = self.next_tetromino
         self.next_tetromino = random.choice(list_of_tetrominoes)
         self.surface_of_next_tetromino = self.construct_surface_of_next_tetromino()
@@ -370,17 +372,17 @@ class Matris(object):
         self.lines += lines_cleared
 
         if lines_cleared:
-            if lines_cleared >= 4:
-                self.linescleared_sound.play()
+            # if lines_cleared >= 4:
+            # self.linescleared_sound.play()
             self.score += 100 * (lines_cleared ** 2) * self.combo
 
             if not self.played_highscorebeaten_sound and self.score > self.highscore:
-                if self.highscore != 0:
-                    self.highscorebeaten_sound.play()
+                # if self.highscore != 0:
+                # self.highscorebeaten_sound.play()
                 self.played_highscorebeaten_sound = True
 
         if self.lines >= self.level * 10:
-            self.levelup_sound.play()
+            # self.levelup_sound.play()
             self.level += 1
 
         self.combo = self.combo + 1 if lines_cleared else 1
@@ -388,7 +390,7 @@ class Matris(object):
         self.set_tetrominoes()
 
         if not self.blend():
-            self.gameover_sound.play()
+            # self.gameover_sound.play()
             self.gameover()
 
         self.needs_redraw = True
