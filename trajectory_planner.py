@@ -22,6 +22,7 @@ class TrajectoryPlanner:
         gamma,
         lr,
         freeze_step,
+        her=True,
         gpu=False,
     ):
         self.state_shape = state_shape
@@ -48,7 +49,7 @@ class TrajectoryPlanner:
 
         self.optimizer = optim.Adam(self.dqn_frozen.parameters(), lr=self.lr)
 
-        self.replay_buffer = ReplayBuffer(buffer_size, gpu=gpu, her=True)
+        self.replay_buffer = ReplayBuffer(buffer_size, gpu=gpu, her=her)
 
         logging.info(self.dqn_frozen)
 

@@ -25,6 +25,7 @@ class TrajectorPlannerTrainer:
         gpu=False,
         episodes=10000,
         render=False,
+        her=True,
         eps=0.1,
     ):
         self.episodes = episodes
@@ -42,6 +43,7 @@ class TrajectorPlannerTrainer:
             gamma,
             lr,
             freeze_step,
+            her,
             gpu,
         )
 
