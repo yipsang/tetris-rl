@@ -40,25 +40,25 @@ class TrajectoryPlanner:
         if gpu:
             self.device = "cuda"
 
-        self.dqn_frozen = DQN(
+        self.dqn_local = DQN(
             action_size, input_shape=state_shape[:2], in_channels=state_shape[2] + 1
         ).to(self.device)
         self.dqn_target = DQN(
             action_size, input_shape=state_shape[:2], in_channels=state_shape[2] + 1
         ).to(self.device)
 
-        self.optimizer = optim.Adam(self.dqn_frozen.parameters(), lr=self.lr)
+        self.optimizer = optim.Adam(self.dqn_local.parameters(), lr=self.lr)
 
         self.replay_buffer = ReplayBuffer(buffer_size, gpu=gpu, her=her)
 
-        logging.info(self.dqn_frozen)
+        logging.info(self.dqn_local)
 
     def act(self, state, goal, eps=0.1):
         _state = np.dstack((state, goal))
         state = torch.from_numpy(_state).float().unsqueeze(0).to(self.device)
-        self.dqn_frozen.eval()
+        self.dqn_local.eval()
         with torch.no_grad():
-            action_values = self.dqn_frozen(state)
+            action_values = self.dqn_local(state)
         if random.random() > eps:
             action = np.argmax(action_values.cpu().data.numpy())
         else:
@@ -96,12 +96,12 @@ class TrajectoryPlanner:
             .unsqueeze(1)
         )
         q_targets = rewards + self.gamma * q_targets_next * (1 - dones)
-        q_expcteds = self.dqn_frozen(
+        q_expcteds = self.dqn_local(
             torch.cat((states, goals.unsqueeze(3)), dim=3)
         ).gather(1, actions)
         loss = F.mse_loss(q_expcteds, q_targets)
         loss.backward()
-        clip_grad_norm_(self.dqn_frozen.parameters(), 1)
+        clip_grad_norm_(self.dqn_local.parameters(), 1)
         self.optimizer.step()
 
         if self.n_train_steps % self.freeze_step == 0:
@@ -110,4 +110,4 @@ class TrajectoryPlanner:
         return loss.detach().cpu().numpy()
 
     def _update_frozen_dqn(self):
-        self.dqn_frozen.load_state_dict(self.dqn_target.state_dict())
+        self.dqn_target.load_state_dict(self.dqn_local.state_dict())
