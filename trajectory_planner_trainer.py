@@ -81,7 +81,7 @@ class TrajectorPlannerTrainer:
                 state, reward, done, info = self.env.reset()
 
             self.losses += episode_losses
-            self.rewards += episode_rewards
+            self.rewards.append(episode_rewards[-1])
             self.log_stat(i, episode_losses, episode_rewards)
             episode_losses = []
             episode_rewards = []
@@ -99,7 +99,7 @@ class TrajectorPlannerTrainer:
         mean_loss = sum(episode_losses) / max(len(episode_losses), 1)
         mean_reward = sum(episode_rewards) / len(episode_rewards)
         last_reward = episode_rewards[-1]
-        overall_mean_reward = sum(self.rewards) / len(self.rewards)
+        last_100_mean_reward = sum(self.rewards[-100:]) / len(self.rewards[-100:])
 
         self.writer.add_scalar("Number of steps/train", num_steps, i)
         self.writer.add_scalar("Mean loss/train", mean_loss, i)
@@ -110,4 +110,4 @@ class TrajectorPlannerTrainer:
         logging.info("mean loss: {}".format(mean_loss))
         logging.info("mean reward: {}".format(mean_reward))
         logging.info("last reward: {}".format(last_reward))
-        logging.info("overall mean reward {}".format(overall_mean_reward))
+        logging.info("Last 100 episodes mean reward {}".format(last_100_mean_reward))
