@@ -25,12 +25,14 @@ class TrajectorPlannerTrainer:
         gpu=False,
         episodes=10000,
         render=False,
+        eps=0.1,
     ):
         self.episodes = episodes
         env = gym.make("matris-v0", render=render, timestep=10)
         env = GoalConditionedReward(env)
         self.env = env
         self.render = render
+        self.eps = eps
         self.writer = SummaryWriter()
         self.trajector_planner = TrajectoryPlanner(
             state_shape,
@@ -56,7 +58,7 @@ class TrajectorPlannerTrainer:
             episode_losses = []
             episode_rewards = []
             while True:
-                action = self.trajector_planner.act(state, info["goal"])
+                action = self.trajector_planner.act(state, info["goal"], eps=self.eps)
                 next_state, reward, done, info = self.env.step(action)
                 if not done and self.render:
                     self.env.render()
