@@ -33,21 +33,26 @@ class ReplayBuffer:
                     self.memory.append(transition)
                     continue
 
+                updated_transition = transition
                 if random.random() < self.her_prob:
                     new_goal = self.sample_goal(i)
-                    transition_ = transition._replace(goal=new_goal)
-                    if np.array_equal(transition.next_state[:, :, 0], new_goal):
-                        transition_ = transition_._replace(reward=1)
+                    updated_transition = updated_transition._replace(goal=new_goal)
+                    if np.array_equal(
+                        updated_transition.next_state[:, :, 0]
+                        + updated_transition.next_state[:, :, 1],
+                        new_goal,
+                    ):
+                        updated_transition = updated_transition._replace(reward=1)
                     else:
-                        transition_ = transition_._replace(reward=0)
-                self.memory.append(transition)
+                        updated_transition = updated_transition._replace(reward=0)
+                self.memory.append(updated_transition)
 
             self.current_episode = []
 
     def sample_goal(self, idx):
-        transiiton = random.choice(self.current_episode[idx:])
+        transition = random.choice(self.current_episode[idx:])
         # transiiton = self.current_episode[-1]
-        return transiiton.state[:, :, 0] + transiiton.state[:, :, 1]
+        return transition.state[:, :, 0] + transition.state[:, :, 1]
 
     def sample(self, batch_size):
         device = "cpu"
