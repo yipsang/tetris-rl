@@ -43,5 +43,5 @@ class DQN(nn.Module):
         x = F.relu(self.conv1(x.permute((0, 3, 1, 2))))
         x = F.relu(self.conv2(x))
         x = F.relu(self.conv3(x))
-        x = F.relu(self.fc4(x.view(x.size(0), -1)))
+        x = F.relu(self.fc4(x.reshape(x.size(0), -1)))
         return self.head(x)
