@@ -1,6 +1,8 @@
 import random
 import gym
+from gym import spaces
 import numpy as np
+from collections import deque
 
 
 class GoalConditionedReward(gym.Wrapper):
@@ -67,3 +69,45 @@ class GoalConditionedReward(gym.Wrapper):
             self.current_goal = goal
             info["goal"] = goal
         return state, reward, done, info
+
+
+class FallingPieceFrameStack(gym.Wrapper):
+    def __init__(self, env, num_stack):
+        super(FallingPieceFrameStack, self).__init__(env)
+        self.num_stack = num_stack
+        self.frames = deque(maxlen=num_stack)
+        self.observation_space = spaces.Box(
+            low=0,
+            high=0,
+            shape=(
+                self.observation_space.shape[0],
+                self.observation_space.shape[1],
+                1 + num_stack,
+            ),
+            dtype=self.observation_space.dtype,
+        )
+
+    def _get_falling_piece_frame(self, observation):
+        return observation[:, :, 1]
+
+    def _get_observation(self, observation):
+        assert len(self.frames) == self.num_stack, (len(self.frames), self.num_stack)
+        stacks = [observation[:, :, 0]] + list(self.frames)
+        return np.stack(stacks, axis=2)
+
+    def _fill_frames(self, observation):
+        for _ in range(self.num_stack):
+            self.frames.append(self._get_falling_piece_frame(observation))
+
+    def step(self, action):
+        observation, reward, done, info = self.env.step(action)
+        if info["round_done"]:
+            self._fill_frames(observation)
+        else:
+            self.frames.append(self._get_falling_piece_frame(observation))
+        return self._get_observation(observation), reward, done, info
+
+    def reset(self, **kwargs):
+        observation, reward, done, info = self.env.reset(**kwargs)
+        self._fill_frames(observation)
+        return self._get_observation(observation), reward, done, info

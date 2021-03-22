@@ -6,7 +6,7 @@ from datetime import datetime
 from torch.utils.tensorboard import SummaryWriter
 
 from trajectory_planner import TrajectoryPlanner
-from wrappers import GoalConditionedReward
+from wrappers import GoalConditionedReward, FallingPieceFrameStack
 
 
 class TrajectorPlannerTrainer:
@@ -29,10 +29,12 @@ class TrajectorPlannerTrainer:
         episolon_decay_frames=10000,
         start_eps=1,
         end_eps=0.1,
+        n_stack_frames=4,
     ):
         self.episodes = episodes
         env = gym.make("matris-v0", render=render, timestep=10)
         env = GoalConditionedReward(env)
+        env = FallingPieceFrameStack(env, n_stack_frames)
         self.env = env
         self.render = render
         self.random_action_frames = random_action_frames
