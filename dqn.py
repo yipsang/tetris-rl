@@ -6,7 +6,7 @@ class DQN(nn.Module):
     def __init__(self, action_size, input_shape=(20, 10), in_channels=3):
         super().__init__()
         self.input_shape = input_shape
-        self.conv1 = nn.Conv2d(in_channels, 32, kernel_size=5, stride=1)
+        self.conv1 = nn.Conv2d(in_channels, 32, kernel_size=3, stride=1)
         # self.bn1 = nn.BatchNorm2d(32)
         self.conv2 = nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1)
         # self.bn2 = nn.BatchNorm2d(64)
@@ -14,7 +14,7 @@ class DQN(nn.Module):
         # self.bn3 = nn.BatchNorm2d(64)
 
         output_shape = input_shape
-        for kernel_size, stride, padding in [(5, 1, 0), (3, 1, 1), (1, 1, 0)]:
+        for kernel_size, stride, padding in [(3, 1, 0), (3, 1, 1), (1, 1, 0)]:
             output_shape = self._calculate_cnn_output_shape(
                 output_shape, kernel_size, stride, padding=padding
             )
