@@ -26,17 +26,24 @@ class TrajectorPlannerTrainer:
         episodes=10000,
         render=False,
         her=True,
-        eps=0.1,
+        random_action_frames=1000,
+        episolon_decay_frames=10000,
+        start_eps=1,
+        end_eps=0.1,
     ):
         self.episodes = episodes
         env = gym.make("matris-v0", render=render, timestep=10)
         env = GoalConditionedReward(env)
         self.env = env
         self.render = render
-        self.eps = eps
+        self.random_action_frames = random_action_frames
+        self.episolon_decay_frames = episolon_decay_frames
+        self.eps = start_eps
+        self.start_eps = start_eps
+        self.end_eps = end_eps
         self.writer = SummaryWriter()
         self.trajector_planner = TrajectoryPlanner(
-            state_shape,
+            env.observation_space.shape,
             env.action_space.n,
             buffer_size,
             batch_size,
@@ -53,6 +60,8 @@ class TrajectorPlannerTrainer:
         self.rewards = []
 
         state, reward, done, info = self.env.reset()
+        frame_count = 0
+        eps_interval = self.start_eps - self.end_eps
         for i in range(self.episodes):
             logging.info("training at episode {} =================".format(i))
             # although it's called episode losses, the q network is actually trained randomly
@@ -60,12 +69,16 @@ class TrajectorPlannerTrainer:
             episode_losses = []
             episode_rewards = []
             while True:
+                frame_count += 1
+                if frame_count < self.random_action_frames:
+                    self.eps = self.start_eps
+                else:
+                    self.eps -= eps_interval / self.episolon_decay_frames
+                    self.eps = max(self.end_eps, self.eps)
                 action = self.trajector_planner.act(state, info["goal"], eps=self.eps)
                 next_state, reward, done, info = self.env.step(action)
                 if not done and self.render:
                     self.env.render()
-                # else:
-                #     print(state[:, :, 0])
                 loss = self.trajector_planner.train_step(
                     state, next_state, info["goal"], action, reward, info["round_done"]
                 )
