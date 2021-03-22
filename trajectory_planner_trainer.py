@@ -16,7 +16,6 @@ class TrajectorPlannerTrainer:
 
     def __init__(
         self,
-        state_shape=(20, 10, 2),
         buffer_size=10000,
         batch_size=64,
         gamma=0.99,
