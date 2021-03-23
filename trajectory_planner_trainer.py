@@ -123,6 +123,9 @@ class TrajectorPlannerTrainer:
         self.writer.add_scalar("Mean loss/train", mean_loss, i)
         self.writer.add_scalar("Mean reward/train", mean_reward, i)
         self.writer.add_scalar("Last step reward/train", last_reward, i)
+        self.writer.add_scalar(
+            "Last 100 episodes mean reward/train", last_100_mean_reward, i
+        )
 
         logging.info("number of steps: {}".format(num_steps))
         logging.info("mean loss: {}".format(mean_loss))
