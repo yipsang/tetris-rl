@@ -24,6 +24,7 @@ class TrajectoryPlanner:
         freeze_step,
         her=True,
         gpu=False,
+        double_dqn=False,
     ):
         self.state_shape = state_shape
         self.action_size = action_size
@@ -33,6 +34,7 @@ class TrajectoryPlanner:
         self.lr = lr
         self.freeze_step = freeze_step
         self.gpu = gpu
+        self.double_dqn = double_dqn
 
         self.n_train_steps = 0
 
@@ -71,9 +73,6 @@ class TrajectoryPlanner:
         if goal is not None:
             self.replay_buffer.add(state, next_state, goal, action, reward, done)
         else:
-            # print("goal is None")
-            #     print(state[:, :, 0], "\n", state[:, :, 1])
-            # print("current episode: ", len(self.replay_buffer.current_episode))
             self.replay_buffer.current_episode = []
 
         # if there are enough transition in replay buffer, then train the agent
@@ -89,12 +88,15 @@ class TrajectoryPlanner:
         """
         self.optimizer.zero_grad()
         states, next_states, goals, actions, rewards, dones = transitions
-        q_targets_next = (
-            self.dqn_target(torch.cat((next_states, goals.unsqueeze(3)), dim=3))
-            .detach()
-            .max(1)[0]
-            .unsqueeze(1)
-        )
+        merged_states = torch.cat((next_states, goals.unsqueeze(3)), dim=3)
+        if self.double_dqn:
+            actions = self.dqn_local(merged_states).detach().max(1)[1].unsqueeze(1)
+            q_targets_next = self.dqn_target(merged_states).detach()
+            q_targets_next = q_targets_next.gather(1, actions)
+        else:
+            q_targets_next = (
+                self.dqn_target(merged_states).detach().max(1)[0].unsqueeze(1)
+            )
         q_targets = rewards + self.gamma * q_targets_next * (1 - dones)
         q_expcteds = self.dqn_local(
             torch.cat((states, goals.unsqueeze(3)), dim=3)

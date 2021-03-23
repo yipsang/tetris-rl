@@ -30,6 +30,7 @@ class TrajectorPlannerTrainer:
         start_eps=1,
         end_eps=0.1,
         n_stack_frames=4,
+        double_dqn=True,
     ):
         self.episodes = episodes
         env = gym.make("matris-v0", render=render, timestep=10)
@@ -53,6 +54,7 @@ class TrajectorPlannerTrainer:
             freeze_step,
             her,
             gpu,
+            double_dqn,
         )
 
     def start(self):
