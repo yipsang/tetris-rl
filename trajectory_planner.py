@@ -90,9 +90,11 @@ class TrajectoryPlanner:
         states, next_states, goals, actions, rewards, dones = transitions
         merged_states = torch.cat((next_states, goals.unsqueeze(3)), dim=3)
         if self.double_dqn:
-            actions = self.dqn_local(merged_states).detach().max(1)[1].unsqueeze(1)
+            q_target_actions = (
+                self.dqn_local(merged_states).detach().max(1)[1].unsqueeze(1)
+            )
             q_targets_next = self.dqn_target(merged_states).detach()
-            q_targets_next = q_targets_next.gather(1, actions)
+            q_targets_next = q_targets_next.gather(1, q_target_actions)
         else:
             q_targets_next = (
                 self.dqn_target(merged_states).detach().max(1)[0].unsqueeze(1)
