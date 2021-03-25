@@ -75,7 +75,7 @@ class TetrisDQNAgentTrainer:
             episode_losses = []
             episode_rewards = []
             step_count = 0
-            while True or step_count >= self.max_episode_step:
+            while not done and step_count < self.max_episode_step:
                 step_count += 1
                 frame_count += 1
                 actions, next_states = zip(*actions_and_next_states)
@@ -106,16 +106,14 @@ class TetrisDQNAgentTrainer:
                     episode_losses.append(loss)
                 episode_rewards.append(reward)
 
-                if done:
-                    logging.info("an episode ends")
-                    (
-                        state,
-                        actions_and_next_states,
-                        reward,
-                        done,
-                        info,
-                    ) = self.env.reset()
-                    break
+            logging.info("an episode ends")
+            (
+                state,
+                actions_and_next_states,
+                reward,
+                done,
+                info,
+            ) = self.env.reset()
 
             self.losses += episode_losses
             self.rewards.append(episode_rewards[-1])
