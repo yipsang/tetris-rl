@@ -149,8 +149,8 @@ class PositionAction(gym.Wrapper):
         board = observation
         n_holes = 0
         for col in board.T:
-            solid_col = np.trim_zeros(col)
-            n_holes += np.count_nonzero(np.trim_zeros(solid_col, "f") == 0)
+            solid_col = np.trim_zeros(col, "f")
+            n_holes += np.count_nonzero(solid_col == 0)
         return n_holes
 
     def _get_handcrafted_observation(self, observation):
