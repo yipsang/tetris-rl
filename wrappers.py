@@ -1,8 +1,19 @@
 import random
+from Matris.matris import MATRIX_WIDTH
 import gym
 from gym import spaces
 import numpy as np
 from collections import deque
+
+COLOR_TO_ROTATION = {
+    "blue": 2,
+    "yellow": 1,
+    "pink": 4,
+    "green": 2,
+    "red": 2,
+    "cyan": 4,
+    "orange": 4,
+}
 
 
 class GoalConditionedReward(gym.Wrapper):
@@ -111,3 +122,156 @@ class FallingPieceFrameStack(gym.Wrapper):
         observation, reward, done, info = self.env.reset(**kwargs)
         self._fill_frames(observation)
         return self._get_observation(observation), reward, done, info
+
+
+class PositionAction(gym.Wrapper):
+    def __init__(self, env, handcrafted_features=True):
+        super().__init__(env)
+        self.handcrafted_features = handcrafted_features
+        self.observation_space = spaces.Box(low=0, high=255, shape=(MATRIX_WIDTH + 2,))
+
+    def _get_column_heights(self, observation):
+        board = observation
+        heights = []
+        for col in board.T:
+            heights.append(np.sum(col))
+        return heights
+
+    def _get_complete_lines(self, observation):
+        board = observation
+        n_complete_lines = 0
+        for row in board:
+            if np.sum(row) == MATRIX_WIDTH:
+                n_complete_lines += 1
+        return n_complete_lines
+
+    def _get_n_holes(self, observation):
+        board = observation
+        n_holes = 0
+        for col in board.T:
+            solid_col = np.trim_zeros(col)
+            n_holes += np.count_nonzero(np.trim_zeros(solid_col, "f") == 0)
+        return n_holes
+
+    def _get_handcrafted_observation(self, observation):
+        handcrafted_observation = self._get_column_heights(observation) + [
+            self._get_complete_lines(observation),
+            self._get_n_holes(observation),
+        ]
+        return np.array(handcrafted_observation)
+
+    def _get_all_next_states(self, matris):
+        posY, posX = matris.tetromino_position
+        valid_observations = []
+        valid_actions = []
+        for i in range(COLOR_TO_ROTATION[matris.current_tetromino.color]):
+            shape = matris.rotated(i)
+            maxPosX = posX
+            while matris.blend(shape=shape, position=(posY, maxPosX)):
+                maxPosX += 1
+            maxPosX -= 1
+            testPosX = maxPosX
+            while matris.blend(shape=shape, position=(posY, testPosX)):
+                testPosY = posY + 1
+                while matris.blend(shape=shape, position=(testPosY, testPosX)):
+                    testPosY += 1
+                # the last position y is an invalid one, roll 1 step back
+                testPosY -= 1
+                valid_observations.append(
+                    self.matrix_to_nparray(
+                        matris.blend(shape=shape, position=(testPosY, testPosX))
+                    )
+                )
+                valid_actions.append((i, testPosY, testPosX))
+                testPosX -= 1
+
+        if len(valid_observations) == 0:
+            return []
+        return list(zip(valid_actions, valid_observations))
+
+    def _get_observation(self, observation):
+        if self.handcrafted_features:
+            return self._get_handcrafted_observation(observation)
+        return observation
+
+    def _skip_frames(self, frames):
+        for _ in range(frames):
+            self.env.step(4)
+
+    def reset(self):
+        obs, reward, done, info = self.env.reset()
+
+        all_next_states = self._get_all_next_states(self.matris)
+
+        if self.handcrafted_features:
+            all_next_states_ = []
+            for action, observation in all_next_states:
+                all_next_states_.append(
+                    (action, self._get_handcrafted_observation(observation))
+                )
+            all_next_states = all_next_states_
+
+        return self._get_observation(obs[:, :, 0]), all_next_states, reward, done, info
+
+    def step(self, action):
+        """
+        action Tuple(int, int, int): 1st entry is the number of rotation needed.
+        The 2nd and 3rd entries are valid target position (y, x) for the falling piece
+        """
+        rotation, y, x = action
+        cur_position = self.matris.tetromino_position
+        for _ in range(rotation):
+            obs, reward, done, info = self.env.step(0)
+            # if it's done only return the final state
+
+            if done:
+                return (
+                    self._get_observation(obs[:, :, 0]),
+                    reward,
+                    done,
+                    info,
+                )
+        # dy = y - cur_position[0]
+        dx = x - cur_position[1]
+        for _ in range(abs(dx)):
+            if dx > 0:
+                obs, reward, done, info = self.env.step(2)
+                if done:
+                    return (
+                        self._get_observation(obs[:, :, 0]),
+                        reward,
+                        done,
+                        info,
+                    )
+            else:
+                obs, reward, done, info = self.env.step(1)
+                if done:
+                    return (
+                        self._get_observation(obs[:, :, 0]),
+                        reward,
+                        done,
+                        info,
+                    )
+        obs, reward, done, info = self.env.step(3)
+        if done:
+            return (
+                self._get_observation(obs[:, :, 0]),
+                reward,
+                done,
+                info,
+            )
+
+        all_next_states = self._get_all_next_states(self.matris)
+
+        if len(all_next_states) == 0:
+            raise Exception("no possible next state")
+
+        if self.handcrafted_features:
+            all_next_states_ = []
+            for action, observation in all_next_states:
+                all_next_states_.append(
+                    (action, self._get_handcrafted_observation(observation))
+                )
+            all_next_states = all_next_states_
+
+        return all_next_states, reward, done, info
