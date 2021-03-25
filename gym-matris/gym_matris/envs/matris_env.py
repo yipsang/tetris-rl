@@ -133,9 +133,15 @@ class MatrisEnv(gym.Env):
         except GameOver:
             done = True
 
-        reward = self.matris.lines - self.prev_lines_cleared
+        line_cleared = self.matris.lines - self.prev_lines_cleared
+        reward = 1 + line_cleared ** 2 * MATRIX_WIDTH
         self.prev_lines_cleared = self.matris.lines
-        return self._convert_board_to_nparray(self.matris), reward, done, self.info
+        return (
+            self._convert_board_to_nparray(self.matris),
+            reward,
+            done,
+            self.info,
+        )
 
     def render(self, mode="human"):
         self.game.redraw()
