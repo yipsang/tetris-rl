@@ -130,12 +130,15 @@ class PositionAction(gym.Wrapper):
         self.handcrafted_features = handcrafted_features
         self.observation_space = spaces.Box(low=0, high=255, shape=(MATRIX_WIDTH + 2,))
 
-    def _get_column_heights(self, observation):
+    def _get_column_heights_and_n_holes(self, observation):
         board = observation
         heights = []
+        n_holes = 0
         for col in board.T:
-            heights.append(np.sum(col))
-        return heights
+            solid_col = np.trim_zeros(col, "f")
+            heights.append(solid_col.shape[0])
+            n_holes += np.count_nonzero(solid_col == 0)
+        return heights, n_holes
 
     def _get_complete_lines(self, observation):
         board = observation
@@ -154,9 +157,10 @@ class PositionAction(gym.Wrapper):
         return n_holes
 
     def _get_handcrafted_observation(self, observation):
-        handcrafted_observation = self._get_column_heights(observation) + [
+        heghts, n_holes = self._get_column_heights_and_n_holes(observation)
+        handcrafted_observation = heghts + [
             self._get_complete_lines(observation),
-            self._get_n_holes(observation),
+            n_holes,
         ]
         return np.array(handcrafted_observation)
 
