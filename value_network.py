@@ -13,6 +13,14 @@ class ValueNetwork(nn.Module):
         layers.append(nn.Linear(layers_size_[-1], 1))
         self.val_net = nn.Sequential(*layers)
 
+        self._create_weights()
+
+    def _create_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                nn.init.xavier_uniform_(m.weight)
+                nn.init.constant_(m.bias, 0)
+
     def forward(self, x):
         """
         x PytorchTensor(*input_shape x channel): Channel last 2d state
