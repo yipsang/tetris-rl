@@ -146,7 +146,7 @@ class MatrisEnv(gym.Env):
         )
 
     def render(self, mode="human"):
-        self.game.redraw()
+        return self.game.redraw(render=True)
 
     def close(self):
         return

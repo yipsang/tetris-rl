@@ -513,7 +513,7 @@ class Game(object):
             except GameOver:
                 return
 
-    def redraw(self):
+    def redraw(self, render=False):
         """
         Redraws the information panel and next termoino panel
         """
@@ -524,6 +524,8 @@ class Game(object):
             self.matris.draw_surface()
 
         pygame.display.flip()
+        if render:
+            return pygame.surfarray.array3d(self.matris.surface)
 
     def blit_info(self):
         """
