@@ -1,5 +1,6 @@
 from torch import random
 import torch
+from torch.nn.modules import linear
 import torch.optim as optim
 import torch.nn.functional as F
 from torch.nn.utils import clip_grad_norm_
@@ -7,14 +8,14 @@ import logging
 import numpy as np
 import random
 
-from value_network import ValueNetwork
+from value_network import ValueNetwork, ConvValueNetwork
 from state_only_replay_buffer import StateOnlyReplayBuffer
 
 
 class TetrisDQNAgent:
     def __init__(
         self,
-        input_size,
+        input_shape,
         buffer_size,
         batch_size,
         gamma,
@@ -22,6 +23,9 @@ class TetrisDQNAgent:
         freeze_step,
         gpu=False,
         layers_size=[128, 256],
+        use_conv=False,
+        conv_layers_config=[(2, 1, 0, 32), (2, 1, 1, 64), (1, 1, 0, 64)],
+        conv_linear_size=128,
     ):
         self.buffer_size = buffer_size
         self.batch_size = batch_size
@@ -36,12 +40,26 @@ class TetrisDQNAgent:
         if gpu:
             self.device = "cuda"
 
-        self.value_net_local = ValueNetwork(input_size, layers_size=layers_size).to(
-            self.device
-        )
-        self.value_net_target = ValueNetwork(input_size, layers_size=layers_size).to(
-            self.device
-        )
+        if use_conv:
+            self.value_net_local = ConvValueNetwork(
+                input_shape[:2],
+                input_shape[-1],
+                layers_config=conv_layers_config,
+                linear_layer_size=conv_linear_size,
+            ).to(self.device)
+            self.value_net_target = ConvValueNetwork(
+                input_shape[:2],
+                input_shape[-1],
+                layers_config=conv_layers_config,
+                linear_layer_size=conv_linear_size,
+            ).to(self.device)
+        else:
+            self.value_net_local = ValueNetwork(
+                input_shape[0], layers_size=layers_size
+            ).to(self.device)
+            self.value_net_target = ValueNetwork(
+                input_shape[0], layers_size=layers_size
+            ).to(self.device)
 
         self.optimizer = optim.Adam(self.value_net_local.parameters(), lr=self.lr)
 

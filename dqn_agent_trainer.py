@@ -34,10 +34,13 @@ class TetrisDQNAgentTrainer:
         end_eps=0.01,
         max_episode_step=1000,
         save_every=100,
+        handcrafted_features=True,
+        conv_layers_config=[(2, 1, 0, 32), (2, 1, 1, 32), (1, 1, 0, 32)],
+        conv_linear_size=128,
     ):
         self.episodes = episodes
         env = gym.make("matris-v0", render=render, timestep=0.05)
-        env = PositionAction(env)
+        env = PositionAction(env, handcrafted_features=handcrafted_features)
         self.env = env
         self.render = render
         self.random_action_episodes = random_action_episodes
@@ -49,7 +52,7 @@ class TetrisDQNAgentTrainer:
         self.writer = SummaryWriter()
         self.save_every = save_every
         self.tetris_dqn_agent = TetrisDQNAgent(
-            env.observation_space.shape[0],
+            env.observation_space.shape,
             buffer_size,
             batch_size,
             gamma,
@@ -57,6 +60,9 @@ class TetrisDQNAgentTrainer:
             freeze_step,
             gpu,
             layers_size,
+            use_conv=not handcrafted_features,
+            conv_layers_config=conv_layers_config,
+            conv_linear_size=conv_linear_size,
         )
 
     def start(self):

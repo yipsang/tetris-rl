@@ -146,7 +146,7 @@ class PositionAction(gym.Wrapper):
         super().__init__(env)
         self.handcrafted_features = handcrafted_features
         self.with_next_tetromino = with_next_tetromino
-        state_shape = (20, 10)
+        state_shape = (20, 10, 1)
         if handcrafted_features:
             state_size = MATRIX_WIDTH * 2 + 1
             if with_next_tetromino:
@@ -222,7 +222,7 @@ class PositionAction(gym.Wrapper):
     def _get_observation(self, observation):
         if self.handcrafted_features:
             return self._get_handcrafted_observation(observation)
-        return observation
+        return np.expand_dims(observation, axis=2)
 
     def _skip_frames(self, frames):
         for _ in range(frames):
@@ -239,6 +239,11 @@ class PositionAction(gym.Wrapper):
                 all_next_states_.append(
                     (action, self._get_handcrafted_observation(observation))
                 )
+            all_next_states = all_next_states_
+        else:
+            all_next_states_ = []
+            for action, observation in all_next_states:
+                all_next_states_.append((action, np.expand_dims(observation, axis=2)))
             all_next_states = all_next_states_
 
         return self._get_observation(obs[:, :, 0]), all_next_states, reward, done, info
@@ -301,6 +306,11 @@ class PositionAction(gym.Wrapper):
                 all_next_states_.append(
                     (action, self._get_handcrafted_observation(observation))
                 )
+            all_next_states = all_next_states_
+        else:
+            all_next_states_ = []
+            for action, observation in all_next_states:
+                all_next_states_.append((action, np.expand_dims(observation, axis=2)))
             all_next_states = all_next_states_
 
         return all_next_states, reward, done, info
