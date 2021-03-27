@@ -15,6 +15,23 @@ COLOR_TO_ROTATION = {
     "orange": 4,
 }
 
+COLOR_TO_ID = {
+    "blue": 0,
+    "yellow": 1,
+    "pink": 2,
+    "green": 3,
+    "red": 4,
+    "cyan": 5,
+    "orange": 6,
+}
+
+COLOR_TO_OHE = {}
+for color, id_ in COLOR_TO_ID.items():
+    next_tetromino_id = COLOR_TO_ID[color]
+    ohe = [0] * len(COLOR_TO_ID.items())
+    ohe[next_tetromino_id] = 1
+    COLOR_TO_OHE[color] = ohe
+
 
 class GoalConditionedReward(gym.Wrapper):
     def __init__(self, env):
@@ -125,20 +142,27 @@ class FallingPieceFrameStack(gym.Wrapper):
 
 
 class PositionAction(gym.Wrapper):
-    def __init__(self, env, handcrafted_features=True):
+    def __init__(self, env, handcrafted_features=True, with_next_state=True):
         super().__init__(env)
         self.handcrafted_features = handcrafted_features
-        self.observation_space = spaces.Box(low=0, high=255, shape=(MATRIX_WIDTH + 2,))
+        self.with_next_state = with_next_state
+        state_shape = (20, 10)
+        if handcrafted_features:
+            state_size = MATRIX_WIDTH * 2 + 1
+            if with_next_state:
+                state_size += len(COLOR_TO_OHE.items())
+            state_shape = (state_size,)
+        self.observation_space = spaces.Box(low=0, high=255, shape=state_shape)
 
-    def _get_column_heights_and_n_holes(self, observation):
+    def _get_column_heights_and_holes(self, observation):
         board = observation
         heights = []
-        n_holes = 0
+        holes = []
         for col in board.T:
             solid_col = np.trim_zeros(col, "f")
             heights.append(solid_col.shape[0])
-            n_holes += np.count_nonzero(solid_col == 0)
-        return heights, n_holes
+            holes.append(np.count_nonzero(solid_col == 0))
+        return heights, holes
 
     def _get_complete_lines(self, observation):
         board = observation
@@ -157,11 +181,13 @@ class PositionAction(gym.Wrapper):
         return n_holes
 
     def _get_handcrafted_observation(self, observation):
-        heghts, n_holes = self._get_column_heights_and_n_holes(observation)
-        handcrafted_observation = heghts + [
-            self._get_complete_lines(observation),
-            n_holes,
-        ]
+        next_tetromino = self.env.matris.next_tetromino
+        heights, holes = self._get_column_heights_and_holes(observation)
+        handcrafted_observation = (
+            heights + holes + [self._get_complete_lines(observation)]
+        )
+        if self.with_next_state:
+            handcrafted_observation += COLOR_TO_OHE[next_tetromino.color]
         return np.array(handcrafted_observation)
 
     def _get_all_next_states(self, matris):
@@ -227,7 +253,6 @@ class PositionAction(gym.Wrapper):
         for _ in range(rotation):
             obs, reward, done, info = self.env.step(0)
             # if it's done only return the final state
-
             if done:
                 return (
                     self._get_observation(obs[:, :, 0]),
