@@ -134,8 +134,10 @@ class MatrisEnv(gym.Env):
             done = True
 
         line_cleared = self.matris.lines - self.prev_lines_cleared
-        reward = 1 + line_cleared ** 2 * MATRIX_WIDTH
+        reward = 1 + line_cleared ** 2 * 2
         self.prev_lines_cleared = self.matris.lines
+        if done:
+            reward -= 2
         return (
             self._convert_board_to_nparray(self.matris),
             reward,
