@@ -28,20 +28,20 @@ class TetrisDQNAgentTrainer:
         gpu=False,
         episodes=10000,
         render=False,
-        random_action_frames=1000,
-        episolon_decay_frames=10000,
+        random_action_episodes=100,
+        episolon_decay_episodes=2000,
         start_eps=1,
-        end_eps=0.1,
+        end_eps=0.01,
         max_episode_step=1000,
         save_every=100,
     ):
         self.episodes = episodes
-        env = gym.make("matris-v0", render=render, timestep=10)
+        env = gym.make("matris-v0", render=render, timestep=0.05)
         env = PositionAction(env)
         self.env = env
         self.render = render
-        self.random_action_frames = random_action_frames
-        self.episolon_decay_frames = episolon_decay_frames
+        self.random_action_episodes = random_action_episodes
+        self.episolon_decay_episodes = episolon_decay_episodes
         self.eps = start_eps
         self.start_eps = start_eps
         self.end_eps = end_eps
@@ -79,11 +79,6 @@ class TetrisDQNAgentTrainer:
                 step_count += 1
                 frame_count += 1
                 actions, next_states = zip(*actions_and_next_states)
-                if frame_count < self.random_action_frames:
-                    self.eps = self.start_eps
-                else:
-                    self.eps -= eps_interval / self.episolon_decay_frames
-                    self.eps = max(self.end_eps, self.eps)
                 action_idx = self.tetris_dqn_agent.act(
                     np.array(next_states), eps=self.eps
                 )
@@ -114,6 +109,12 @@ class TetrisDQNAgentTrainer:
                 done,
                 info,
             ) = self.env.reset()
+
+            if i < self.random_action_episodes:
+                self.eps = self.start_eps
+            else:
+                self.eps -= eps_interval / self.episolon_decay_episodes
+                self.eps = max(self.end_eps, self.eps)
 
             self.losses += episode_losses
             self.rewards.append(episode_rewards[-1])
