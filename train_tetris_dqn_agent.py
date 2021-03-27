@@ -12,7 +12,7 @@ def main():
         batch_size=64,
         gamma=0.99,
         lr=1e-4,
-        freeze_step=5,
+        freeze_step=1,
         gpu=False,
         episodes=10000,
         render=False,
