@@ -382,9 +382,9 @@ class Matris(object):
                 # self.highscorebeaten_sound.play()
                 self.played_highscorebeaten_sound = True
 
-        if self.lines >= self.level * 10:
-            # self.levelup_sound.play()
-            self.level += 1
+        # if self.lines >= self.level * 10:
+        #     # self.levelup_sound.play()
+        #     self.level += 1
 
         self.combo = self.combo + 1 if lines_cleared else 1
 
