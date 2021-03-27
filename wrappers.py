@@ -142,14 +142,14 @@ class FallingPieceFrameStack(gym.Wrapper):
 
 
 class PositionAction(gym.Wrapper):
-    def __init__(self, env, handcrafted_features=True, with_next_state=True):
+    def __init__(self, env, handcrafted_features=True, with_next_tetromino=True):
         super().__init__(env)
         self.handcrafted_features = handcrafted_features
-        self.with_next_state = with_next_state
+        self.with_next_tetromino = with_next_tetromino
         state_shape = (20, 10)
         if handcrafted_features:
             state_size = MATRIX_WIDTH * 2 + 1
-            if with_next_state:
+            if with_next_tetromino:
                 state_size += len(COLOR_TO_OHE.items())
             state_shape = (state_size,)
         self.observation_space = spaces.Box(low=0, high=255, shape=state_shape)
@@ -186,7 +186,7 @@ class PositionAction(gym.Wrapper):
         handcrafted_observation = (
             heights + holes + [self._get_complete_lines(observation)]
         )
-        if self.with_next_state:
+        if self.with_next_tetromino:
             handcrafted_observation += COLOR_TO_OHE[next_tetromino.color]
         return np.array(handcrafted_observation)
 
