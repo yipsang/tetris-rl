@@ -134,7 +134,9 @@ class MatrisEnv(gym.Env):
             done = True
 
         line_cleared = self.matris.lines - self.prev_lines_cleared
-        reward = 1 + line_cleared ** 2 * 2
+        reward = 1 + line_cleared ** 2 * MATRIX_WIDTH
+        if action == 3:
+            reward += 10
         self.prev_lines_cleared = self.matris.lines
         if done:
             reward -= 2
