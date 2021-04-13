@@ -85,6 +85,7 @@ def train(rank, args, shared_model, counter, lock, optimizer):
         
         # episode has ended
         state, actions_and_next_states, reward, done, info = env.reset()
+        state = torch.from_numpy(state)
         
         R = torch.zeros(1, 1)
 
@@ -111,6 +112,8 @@ def train(rank, args, shared_model, counter, lock, optimizer):
 
         ensure_shared_grads(model, shared_model)
         optimizer.step()
+
+        print("NEW EPISODE COMPLTED - Policy Loss: {}, Value Loss: {}".format(policy_loss, value_loss))
 
 
 

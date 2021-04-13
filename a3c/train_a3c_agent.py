@@ -4,7 +4,7 @@ import logging
 import torch.multiprocessing as mp
 import gym
 
-from a3c_adam import A3CAdamOpt
+from a3c_adam import A3CAdamOpt, SharedAdam
 from a3c_test import test
 from a3c_train import train
 from actor_critic_value_network import ActorCriticValueNetwork
@@ -21,7 +21,7 @@ def main():
     shared_model = ActorCriticValueNetwork(env.observation_space.shape[0], env.action_space.n)
     shared_model.share_memory()
 
-    optimizer = A3CAdamOpt(shared_model.parameters())
+    optimizer = SharedAdam(shared_model.parameters())
     optimizer.share_memory()
     
     processes = []
