@@ -1,6 +1,5 @@
 from torch import random
 import torch
-from torch.nn.modules import linear
 import torch.optim as optim
 import torch.nn.functional as F
 from torch.nn.utils import clip_grad_norm_
@@ -26,6 +25,8 @@ class TetrisDQNAgent:
         use_conv=False,
         conv_layers_config=[(2, 1, 0, 32), (2, 1, 1, 64), (1, 1, 0, 64)],
         conv_linear_size=128,
+        # Noisy net config (not suitable for conv yet)
+        is_noisy=False,
     ):
         self.buffer_size = buffer_size
         self.batch_size = batch_size
@@ -33,6 +34,7 @@ class TetrisDQNAgent:
         self.lr = lr
         self.freeze_step = freeze_step
         self.gpu = gpu
+        self.is_noisy = is_noisy
 
         self.n_train_steps = 0
 
@@ -55,10 +57,10 @@ class TetrisDQNAgent:
             ).to(self.device)
         else:
             self.value_net_local = ValueNetwork(
-                input_shape[0], layers_size=layers_size
+                input_shape[0], layers_size=layers_size, is_noisy=is_noisy
             ).to(self.device)
             self.value_net_target = ValueNetwork(
-                input_shape[0], layers_size=layers_size
+                input_shape[0], layers_size=layers_size, is_noisy=is_noisy
             ).to(self.device)
 
         self.optimizer = optim.Adam(self.value_net_local.parameters(), lr=self.lr)
@@ -69,7 +71,7 @@ class TetrisDQNAgent:
 
     def act(self, next_states, eps=0.1):
         state = torch.from_numpy(next_states).float().to(self.device)
-        if random.random() > eps:
+        if self.is_noisy or random.random() > eps:
             self.value_net_local.eval()
             with torch.no_grad():
                 state_values = self.value_net_local(state)
@@ -102,6 +104,10 @@ class TetrisDQNAgent:
         loss.backward()
         clip_grad_norm_(self.value_net_local.parameters(), 1)
         self.optimizer.step()
+
+        if self.is_noisy:
+            self.value_net_local.reset_noise()
+            self.value_net_target.reset_noise()
 
         if self.n_train_steps % self.freeze_step == 0:
             self._update_frozen_dqn()

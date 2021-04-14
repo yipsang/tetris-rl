@@ -1,16 +1,18 @@
+from layers import NoisyLinear
 from torch import nn
-import torch.nn.functional as F
 
 
 class ValueNetwork(nn.Module):
-    def __init__(self, input_size, layers_size=[128, 256]):
+    def __init__(self, input_size, layers_size=[128, 256], is_noisy=False):
         super().__init__()
+        self.is_noisy = is_noisy
         layers = []
         layers_size_ = [input_size] + layers_size
+        Linear = nn.Linear if not is_noisy else NoisyLinear
         for i in range(len(layers_size)):
-            layers.append(nn.Linear(layers_size_[i], layers_size_[i + 1]))
+            layers.append(Linear(layers_size_[i], layers_size_[i + 1]))
             layers.append(nn.ReLU())
-        layers.append(nn.Linear(layers_size_[-1], 1))
+        layers.append(Linear(layers_size_[-1], 1))
         self.val_net = nn.Sequential(*layers)
 
         self._create_weights()
@@ -26,6 +28,14 @@ class ValueNetwork(nn.Module):
         x PytorchTensor(batch x input_shape): batch of input vectors
         """
         return self.val_net(x)
+
+    def reset_noise(self):
+        """Reset all noisy layers."""
+        if not self.is_noisy:
+            return
+        for m in self.modules():
+            if isinstance(m, NoisyLinear):
+                m.reset_noise()
 
 
 class ConvValueNetwork(nn.Module):

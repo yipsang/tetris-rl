@@ -1,5 +1,4 @@
 import os
-from numpy.lib.npyio import save
 import torch
 import gym
 from gym_matris import *
@@ -13,10 +12,6 @@ from wrappers import PositionAction
 
 
 class TetrisDQNAgentTrainer:
-    """
-    episodes: number of episodes to train, the episode here means each falling piece round in tetris
-    """
-
     def __init__(
         self,
         layers_size=[128, 256],
@@ -37,6 +32,7 @@ class TetrisDQNAgentTrainer:
         handcrafted_features=True,
         conv_layers_config=[(2, 1, 0, 32), (2, 1, 1, 32), (1, 1, 0, 32)],
         conv_linear_size=128,
+        is_noisy=False,
     ):
         self.episodes = episodes
         env = gym.make("matris-v0", render=render, timestep=0.05)
@@ -63,6 +59,7 @@ class TetrisDQNAgentTrainer:
             use_conv=not handcrafted_features,
             conv_layers_config=conv_layers_config,
             conv_linear_size=conv_linear_size,
+            is_noisy=is_noisy,
         )
 
     def start(self):
