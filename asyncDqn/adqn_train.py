@@ -80,8 +80,6 @@ def train(rank, args, shared_model, counter, lock, optimizer):
         # episode has ended
         print("EPISODE COMPLETE - Length: {}".format(episode_length))
 
-        state, actions_and_next_states, reward, done, info = env.reset()
-
         if episode_num < random_action_episodes:
             eps = start_eps
         else:
@@ -95,4 +93,5 @@ def train(rank, args, shared_model, counter, lock, optimizer):
 
         to_train = (f_states, f_next_states, f_rewards, f_dones)
         loss = agent.train(to_train, episode_num)
-        print("Training Loss: {}".format(loss))
+
+        state, actions_and_next_states, reward, done, info = env.reset()

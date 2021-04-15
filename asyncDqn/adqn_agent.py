@@ -51,12 +51,26 @@ class ADQNAgent:
         """
         self.optimizer.zero_grad()
         states, next_states, rewards, dones = transitions
-        q_targets_next = self.model_target(next_states)
-        q_targets = rewards + self.gamma * q_targets_next * (1 - dones)
-        q_expcteds = self.model(states)
-        loss = F.mse_loss(q_expcteds, q_targets)
+
+        all_rewards = torch.zeros(len(rewards), 1)
+        rewards_sum = 0
+        for i in reversed(range(len(rewards))):
+            R = (self.gamma ** i) * rewards[i]
+
+            R += rewards_sum
+            rewards_sum = R
+            all_rewards[i] = R
+
+        q_targets = self.model_target(states)
+
+        print("Rewards Sum: {}".format(rewards_sum))
+
+        loss = F.mse_loss(all_rewards, q_targets)
         loss.backward()
+
         clip_grad_norm_(self.model.parameters(), 1)
+
+        self.ensure_shared_grads()
         self.optimizer.step()
 
         if T % self.freeze_step == 0:
@@ -68,4 +82,10 @@ class ADQNAgent:
         self.model_target.load_state_dict(self.model.state_dict())
 
     def sync_model_params(self):
-        self.model.load_state_dict(self.model_target.state_dict())   
+        self.model.load_state_dict(self.model_target.state_dict())  
+    
+    def ensure_shared_grads(self):
+        for param, shared_param in zip(self.model.parameters(), self.model_target.parameters()):
+            if shared_param.grad is not None:
+                return
+            shared_param._grad = param.grad
