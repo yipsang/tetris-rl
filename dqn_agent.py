@@ -25,7 +25,7 @@ class TetrisDQNAgent:
         use_conv=False,
         conv_layers_config=[(2, 1, 0, 32), (2, 1, 1, 64), (1, 1, 0, 64)],
         conv_linear_size=128,
-        # Noisy net config (not suitable for conv yet)
+        # Noisy net config
         is_noisy=False,
     ):
         self.buffer_size = buffer_size
@@ -48,12 +48,14 @@ class TetrisDQNAgent:
                 input_shape[-1],
                 layers_config=conv_layers_config,
                 linear_layer_size=conv_linear_size,
+                is_noisy=is_noisy,
             ).to(self.device)
             self.value_net_target = ConvValueNetwork(
                 input_shape[:2],
                 input_shape[-1],
                 layers_config=conv_layers_config,
                 linear_layer_size=conv_linear_size,
+                is_noisy=is_noisy,
             ).to(self.device)
         else:
             self.value_net_local = ValueNetwork(
