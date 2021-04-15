@@ -63,7 +63,9 @@ def train(rank, args, shared_model, counter, lock, optimizer):
             action_idx = prob.multinomial(num_samples=1).detach()
             log_prob = log_prob[action_idx]
 
-            action = actions[action_idx]
+            print(actions)
+            # action = actions[action_idx]
+            action = env.action_space[action_idx]
             actions_and_next_states, reward, done, info = env.step(action)
 
             done = done or episode_length >= max_episode_length
