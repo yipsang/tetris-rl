@@ -47,7 +47,7 @@ class ADQNAgent:
             action = random.choice(np.arange(len(next_states)))
         return action
 
-    def train(self, transitions, T):
+    def train(self, transitions, T, end_reward):
         """
         transitions: (Tuple[torch.Tensor]): tuple of (s, s', r, done) tuples
         """
@@ -55,7 +55,7 @@ class ADQNAgent:
         states, next_states, rewards, dones = transitions
 
         all_rewards = torch.zeros(len(rewards), 1)
-        rewards_sum = 0
+        rewards_sum = end_reward
         for i in reversed(range(len(rewards))):
             R = self.gamma * rewards_sum + rewards[i]
             rewards_sum = R
@@ -80,7 +80,7 @@ class ADQNAgent:
         return loss.detach().cpu().numpy()
 
     def _update_frozen_dqn(self):
-        self.shared_model_target.load_state_dict(self.model.state_dict())
+        self.shared_model_target.load_state_dict(self.shared_model.state_dict())
 
     def sync_model_params(self):
         self.model.load_state_dict(self.shared_model_target.state_dict()) 

@@ -40,6 +40,7 @@ def train(rank, args, shared_model, shared_model_target, counter, lock, optimize
     done = False
     episode_num = 0
     while True:
+        optimizer.zero_grad()
         agent.sync_model_params_local()
         
         episode_num += 1
@@ -59,7 +60,6 @@ def train(rank, args, shared_model, shared_model_target, counter, lock, optimize
 
             actions, next_states = zip(*actions_and_next_states)
 
-            # next_states_n = torch.from_numpy(next_states).float()
             action_idx = agent.act(np.array(next_states), eps=eps)
 
             action = actions[action_idx]
@@ -68,10 +68,7 @@ def train(rank, args, shared_model, shared_model_target, counter, lock, optimize
             if not done and render:
                 env.render()
             
-            if done:
-                next_state = actions_and_next_states
-            else:
-                next_state = next_states[action_idx]
+            next_state = next_states[action_idx]
 
             prev_states.append(state)
             prev_next_states.append(next_state)
@@ -82,6 +79,10 @@ def train(rank, args, shared_model, shared_model_target, counter, lock, optimize
         
         # episode has ended
         print("EPISODE COMPLETE - Length: {}".format(episode_length))
+
+        end_reward = 0
+        if not done:
+            end_reward = shared_model_target(torch.from_numpy(state).float())
 
         if episode_num < random_action_episodes:
             eps = start_eps
@@ -95,6 +96,6 @@ def train(rank, args, shared_model, shared_model_target, counter, lock, optimize
         f_dones = (torch.from_numpy(np.vstack([x for x in prev_dones])).int())
 
         to_train = (f_states, f_next_states, f_rewards, f_dones)
-        loss = agent.train(to_train, T)
+        loss = agent.train(to_train, T, end_reward)
 
         state, actions_and_next_states, reward, done, info = env.reset()
