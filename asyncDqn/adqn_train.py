@@ -16,16 +16,17 @@ def ensure_shared_grads(model, shared_model):
             return
         shared_param._grad = param.grad
 
-def train(rank, args, shared_model, counter, lock, optimizer):
+def train(rank, args, shared_model, shared_model_target, counter, lock, optimizer):
     env = gym.make("matris-v0", render=False, timestep=0.05)
     env = PositionAction(env, handcrafted_features=True)
 
-    agent = ADQNAgent(env.observation_space.shape, optimizer, shared_model)
+    agent = ADQNAgent(env.observation_space.shape, optimizer, shared_model, shared_model_target)
 
     state, actions_and_next_states, reward, done, info = env.reset()
     # state = torch.from_numpy(state)
 
-    agent.sync_model_params()
+    agent.sync_model_params_target()
+    agent.sync_model_params_local()
 
     episode_steps = 100
     render = False
@@ -39,6 +40,8 @@ def train(rank, args, shared_model, counter, lock, optimizer):
     done = False
     episode_num = 0
     while True:
+        agent.sync_model_params_local()
+        
         episode_num += 1
         
         prev_states = []
@@ -92,6 +95,6 @@ def train(rank, args, shared_model, counter, lock, optimizer):
         f_dones = (torch.from_numpy(np.vstack([x for x in prev_dones])).int())
 
         to_train = (f_states, f_next_states, f_rewards, f_dones)
-        loss = agent.train(to_train, episode_num)
+        loss = agent.train(to_train, T)
 
         state, actions_and_next_states, reward, done, info = env.reset()

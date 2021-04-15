@@ -13,13 +13,16 @@ from wrappers import PositionAction
 logging.basicConfig(level=logging.INFO)
 
 def main():
-    num_processes = 1
+    num_processes = 8
 
     env = gym.make("matris-v0", render=False, timestep=0.05)
     env = PositionAction(env, handcrafted_features=True)
 
     shared_model = ValueNetwork(env.observation_space.shape[0])
     shared_model.share_memory()
+
+    shared_model_target = ValueNetwork(env.observation_space.shape[0])
+    shared_model_target.share_memory()
 
     optimizer = SharedAdam(shared_model.parameters())
     optimizer.share_memory()
@@ -36,7 +39,7 @@ def main():
     # processes.append(p)
 
     for rank in range(num_processes):
-        p = mp.Process(target=train, args=(rank, args, shared_model, counter, lock, optimizer))
+        p = mp.Process(target=train, args=(rank, args, shared_model, shared_model_target, counter, lock, optimizer))
         p.start()
         processes.append(p)
     

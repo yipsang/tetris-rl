@@ -17,6 +17,7 @@ class ADQNAgent:
         input_shape,
         optimizer,
         shared_model,
+        shared_model_target,
         batch_size=64,
         gamma=0.99,
         lr=1e-4,
@@ -29,9 +30,10 @@ class ADQNAgent:
         self.freeze_step = freeze_step
 
         self.model = ValueNetwork(input_shape[0], layers_size=layers_size)
-        self.model_target = shared_model
-        # self.optimizer = optimizer
-        self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
+        self.shared_model = shared_model
+        self.shared_model_target = shared_model_target
+        self.optimizer = optimizer
+        # self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
 
     def act(self, next_states, eps=0.1):
         state = torch.from_numpy(next_states).float()
@@ -49,7 +51,7 @@ class ADQNAgent:
         """
         transitions: (Tuple[torch.Tensor]): tuple of (s, s', r, done) tuples
         """
-        self.optimizer.zero_grad()
+        # self.optimizer.zero_grad()
         states, next_states, rewards, dones = transitions
 
         all_rewards = torch.zeros(len(rewards), 1)
@@ -60,7 +62,7 @@ class ADQNAgent:
 
             all_rewards[i] = R
 
-        q_targets = self.model_target(states)
+        q_targets = self.model(states)
 
         print("Rewards Sum: {}".format(rewards_sum))
 
@@ -78,13 +80,19 @@ class ADQNAgent:
         return loss.detach().cpu().numpy()
 
     def _update_frozen_dqn(self):
-        self.model_target.load_state_dict(self.model.state_dict())
+        self.shared_model_target.load_state_dict(self.model.state_dict())
 
     def sync_model_params(self):
-        self.model.load_state_dict(self.model_target.state_dict())  
+        self.model.load_state_dict(self.shared_model_target.state_dict()) 
+
+    def sync_model_params_local(self):
+        self.model.load_state_dict(self.shared_model.state_dict())  
     
+    def sync_model_params_target(self):
+        self.shared_model_target.load_state_dict(self.shared_model.state_dict())  
+
     def ensure_shared_grads(self):
-        for param, shared_param in zip(self.model.parameters(), self.model_target.parameters()):
+        for param, shared_param in zip(self.model.parameters(), self.shared_model.parameters()):
             if shared_param.grad is not None:
                 return
             shared_param._grad = param.grad

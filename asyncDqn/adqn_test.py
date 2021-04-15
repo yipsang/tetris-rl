@@ -29,6 +29,7 @@ def test(rank, args, shared_model, counter):
     episode_length = 0
 
     while True:
+        optimizer.zero_grad()
         episode_length += 1
         # Sync with the shared model
 
