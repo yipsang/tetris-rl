@@ -55,10 +55,9 @@ class ADQNAgent:
         all_rewards = torch.zeros(len(rewards), 1)
         rewards_sum = 0
         for i in reversed(range(len(rewards))):
-            R = (self.gamma ** i) * rewards[i]
-
-            R += rewards_sum
+            R = self.gamma * rewards_sum + rewards[i]
             rewards_sum = R
+
             all_rewards[i] = R
 
         q_targets = self.model_target(states)
