@@ -16,7 +16,7 @@ def ensure_shared_grads(model, shared_model):
             return
         shared_param._grad = param.grad
 
-def train(rank, args, shared_model, shared_model_target, counter, lock, optimizer):
+def train(rank, args, shared_model, shared_model_target, counter, lock, optimizer, writer_proxy):
     env = gym.make("matris-v0", render=False, timestep=0.05)
     env = PositionAction(env, handcrafted_features=True)
 
@@ -79,6 +79,7 @@ def train(rank, args, shared_model, shared_model_target, counter, lock, optimize
         
         # episode has ended
         print("EPISODE COMPLETE - Length: {}".format(episode_length))
+        writer_proxy.log((sum(prev_rewards), episode_length,))
 
         end_reward = 0
         if not done:
