@@ -22,22 +22,23 @@ class ADQNAgent:
         gamma=0.99,
         lr=1e-4,
         freeze_step=5,
-        layers_size=[128, 256]
+        layers_size=[128, 256],
+        is_noisy=False,
     ):
         self.batch_size = batch_size
         self.gamma = gamma
         self.lr = lr
         self.freeze_step = freeze_step
+        self.is_noisy = is_noisy
 
-        self.model = ValueNetwork(input_shape[0], layers_size=layers_size)
+        self.model = ValueNetwork(input_shape[0], layers_size=layers_size, is_noisy=is_noisy)
         self.shared_model = shared_model
         self.shared_model_target = shared_model_target
         self.optimizer = optimizer
-        # self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
 
     def act(self, next_states, eps=0.1):
         state = torch.from_numpy(next_states).float()
-        if random.random() > eps:
+        if self.is_noisy or random.random() > eps:
             self.model.eval()
             with torch.no_grad():
                 state_values = self.model(state)
@@ -73,6 +74,10 @@ class ADQNAgent:
 
         self.ensure_shared_grads()
         self.optimizer.step()
+
+        if self.is_noisy:
+            self.shared_model.reset_noise()
+            self.shared_model_target.reset_noise()
 
         if T % self.freeze_step == 0:
             self._update_frozen_dqn()

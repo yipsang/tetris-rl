@@ -1,16 +1,18 @@
+from layers import NoisyLinear
 from torch import nn
-import torch.nn.functional as F
 
 
 class ValueNetwork(nn.Module):
-    def __init__(self, input_size, layers_size=[128, 256]):
+    def __init__(self, input_size, layers_size=[128, 256], is_noisy=False):
         super().__init__()
+        self.is_noisy = is_noisy
         layers = []
         layers_size_ = [input_size] + layers_size
+        Linear = nn.Linear if not is_noisy else NoisyLinear
         for i in range(len(layers_size)):
-            layers.append(nn.Linear(layers_size_[i], layers_size_[i + 1]))
+            layers.append(Linear(layers_size_[i], layers_size_[i + 1]))
             layers.append(nn.ReLU())
-        layers.append(nn.Linear(layers_size_[-1], 1))
+        layers.append(Linear(layers_size_[-1], 1))
         self.val_net = nn.Sequential(*layers)
 
         self._create_weights()
@@ -27,6 +29,14 @@ class ValueNetwork(nn.Module):
         """
         return self.val_net(x)
 
+    def reset_noise(self):
+        """Reset all noisy layers."""
+        if not self.is_noisy:
+            return
+        for m in self.modules():
+            if isinstance(m, NoisyLinear):
+                m.reset_noise()
+
 
 class ConvValueNetwork(nn.Module):
     def __init__(
@@ -35,11 +45,13 @@ class ConvValueNetwork(nn.Module):
         in_channels=1,
         layers_config=[(2, 1, 0, 32), (2, 1, 1, 64), (1, 1, 0, 64)],
         linear_layer_size=128,
+        is_noisy=False,
     ):
         """
         layers_config (list of tuples): [(kernel_size, stride, padding, layer_channels)]
         """
         super().__init__()
+        self.is_noisy = is_noisy
         layers = []
         for i in range(len(layers_config)):
             k, s, p, c = layers_config[i]
@@ -56,14 +68,15 @@ class ConvValueNetwork(nn.Module):
                 output_shape, kernel_size, stride, padding=padding
             )
         layers.append(nn.Flatten())
+        Linear = nn.Linear if not is_noisy else NoisyLinear
         layers.append(
-            nn.Linear(
+            Linear(
                 output_shape[0] * output_shape[1] * layers_config[-1][3],
                 linear_layer_size,
             )
         )
         layers.append(nn.ReLU())
-        layers.append(nn.Linear(linear_layer_size, 1))
+        layers.append(Linear(linear_layer_size, 1))
         self.val_net = nn.Sequential(*layers)
 
         self._create_weights()
@@ -93,3 +106,11 @@ class ConvValueNetwork(nn.Module):
         x PytorchTensor(*input_shape x channel): Channel last 2d state
         """
         return self.val_net(x.permute((0, 3, 1, 2)))
+
+    def reset_noise(self):
+        """Reset all noisy layers."""
+        if not self.is_noisy:
+            return
+        for m in self.modules():
+            if isinstance(m, NoisyLinear):
+                m.reset_noise()
