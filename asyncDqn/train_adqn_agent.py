@@ -49,13 +49,17 @@ def main():
     counter = mp.Value('i', 0)
     lock = mp.Lock()
 
+    episodes_counter = mp.Value('i', 0)
+    episodes_lock = mp.Lock()
+
     BaseManager.register('SummaryWriterProxy', SummaryWriterProxy)
     manager = BaseManager()
     manager.start()
     writer_proxy = manager.SummaryWriterProxy()
 
     for rank in range(num_processes):
-        p = mp.Process(target=train, args=(rank, args, shared_model, shared_model_target, counter, lock, optimizer, writer_proxy))
+        p = mp.Process(target=train, args=(rank, args, shared_model, shared_model_target, counter, lock,
+            episodes_counter, episodes_lock, optimizer, writer_proxy))
         p.start()
         processes.append(p)
     

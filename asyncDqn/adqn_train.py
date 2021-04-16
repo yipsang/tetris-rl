@@ -1,7 +1,9 @@
+import os
 import torch
 import torch.nn.functional as F
 import random
 import numpy as np
+from datetime import datetime
 
 from wrappers import PositionAction
 import gym
@@ -16,7 +18,7 @@ def ensure_shared_grads(model, shared_model):
             return
         shared_param._grad = param.grad
 
-def train(rank, args, shared_model, shared_model_target, counter, lock, optimizer, writer_proxy):
+def train(rank, args, shared_model, shared_model_target, counter, lock, episodes_counter, episodes_lock, optimizer, writer_proxy):
     env = gym.make("matris-v0", render=False, timestep=0.05)
     env = PositionAction(env, handcrafted_features=True)
 
@@ -28,7 +30,7 @@ def train(rank, args, shared_model, shared_model_target, counter, lock, optimize
     agent.sync_model_params_target()
     agent.sync_model_params_local()
 
-    episode_steps = 100
+    episode_steps = 1000
     render = False
     random_action_episodes = 100
     eps = 1
@@ -36,6 +38,11 @@ def train(rank, args, shared_model, shared_model_target, counter, lock, optimize
     end_eps = 0.01
     eps_interval = start_eps - end_eps
     epsilon_decay_episodes = 2000
+    save_every = 50
+
+    save_dir = "trained_models/adqn_{}/".format(
+        datetime.now().strftime("%d_%m_%Y_%H_%M")
+    )
 
     done = False
     episode_num = 0
@@ -49,6 +56,10 @@ def train(rank, args, shared_model, shared_model_target, counter, lock, optimize
         prev_next_states = []
         prev_rewards = []
         prev_dones = []
+
+        with episodes_lock:
+            episodes_counter.value += 1
+            EC = episodes_counter.value
 
         episode_length = 0
         while not done and episode_length < episode_steps:
@@ -98,5 +109,13 @@ def train(rank, args, shared_model, shared_model_target, counter, lock, optimize
 
         to_train = (f_states, f_next_states, f_rewards, f_dones)
         loss = agent.train(to_train, T, end_reward)
+
+        if EC % save_every == 0:
+            if not os.path.isdir(save_dir):
+                os.makedirs(save_dir)
+            torch.save(
+                shared_model.state_dict(),
+                save_dir + "adqn_{}.model".format(EC),
+            )
 
         state, actions_and_next_states, reward, done, info = env.reset()
