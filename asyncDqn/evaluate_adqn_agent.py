@@ -8,7 +8,7 @@ import cv2
 from value_network import ValueNetwork
 from wrappers import PositionAction
 
-MODEL_PATH = "trained_models/adqn_15_04_2021_23_19/dqn_38150.model"
+MODEL_PATH = "trained_models/adqn_19_04_2021_21_30/adqn_78700.model"
 GPU_ENABLED = False
 RECORD = True
 VIDEO_PATH = "adqn.mp4"

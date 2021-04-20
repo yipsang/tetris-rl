@@ -19,9 +19,9 @@ class ADQNAgent:
         shared_model,
         shared_model_target,
         batch_size=64,
-        gamma=0.99,
+        gamma=1,
         lr=1e-4,
-        freeze_step=5,
+        freeze_step=1,
         layers_size=[128, 256]
     ):
         self.batch_size = batch_size
@@ -64,7 +64,7 @@ class ADQNAgent:
 
         q_targets = self.model(states)
 
-        print("Rewards Sum: {}".format(rewards_sum))
+        # print("Rewards Sum: {}".format(rewards_sum))
 
         loss = F.mse_loss(all_rewards, q_targets)
         loss.backward()
