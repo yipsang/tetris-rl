@@ -6,6 +6,7 @@ import torch.multiprocessing as mp
 from multiprocessing.managers import BaseManager
 from torch.utils.tensorboard.writer import SummaryWriter
 import gym
+from datetime import datetime
 
 from adqn_adam import SharedAdam
 from adqn_test import test
@@ -29,14 +30,15 @@ class SummaryWriterProxy(object):
 
 def main():
     num_processes = 8
+    is_noisy=False
 
     env = gym.make("matris-v0", render=False, timestep=0.05)
     env = PositionAction(env, handcrafted_features=True)
 
-    shared_model = ValueNetwork(env.observation_space.shape[0])
+    shared_model = ValueNetwork(env.observation_space.shape[0], is_noisy=is_noisy)
     shared_model.share_memory()
 
-    shared_model_target = ValueNetwork(env.observation_space.shape[0])
+    shared_model_target = ValueNetwork(env.observation_space.shape[0], is_noisy=is_noisy)
     shared_model_target.share_memory()
 
     optimizer = SharedAdam(shared_model.parameters())
@@ -57,9 +59,13 @@ def main():
     manager.start()
     writer_proxy = manager.SummaryWriterProxy()
 
+    save_dir = "trained_models/adqn_{}/".format(
+        datetime.now().strftime("%d_%m_%Y_%H_%M")
+    )
+
     for rank in range(num_processes):
         p = mp.Process(target=train, args=(rank, args, shared_model, shared_model_target, counter, lock,
-            episodes_counter, episodes_lock, optimizer, writer_proxy))
+            episodes_counter, episodes_lock, optimizer, writer_proxy, save_dir, is_noisy))
         p.start()
         processes.append(p)
     

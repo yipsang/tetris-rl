@@ -3,7 +3,6 @@ import torch
 import torch.nn.functional as F
 import random
 import numpy as np
-from datetime import datetime
 
 from wrappers import PositionAction
 import gym
@@ -18,15 +17,13 @@ def ensure_shared_grads(model, shared_model):
             return
         shared_param._grad = param.grad
 
-def train(rank, args, shared_model, shared_model_target, counter, lock, episodes_counter, episodes_lock, optimizer, writer_proxy):
+def train(rank, args, shared_model, shared_model_target, counter, lock, episodes_counter, episodes_lock, optimizer, writer_proxy, save_dir, is_noisy):
     env = gym.make("matris-v0", render=False, timestep=0.05)
     env = PositionAction(env, handcrafted_features=True)
 
-    agent = ADQNAgent(env.observation_space.shape, optimizer, shared_model, shared_model_target)
+    agent = ADQNAgent(env.observation_space.shape, optimizer, shared_model, shared_model_target, is_noisy=is_noisy)
 
     state, actions_and_next_states, reward, done, info = env.reset()
-    # state = torch.from_numpy(state)
-
     agent.sync_model_params_target()
     agent.sync_model_params_local()
 
@@ -39,10 +36,6 @@ def train(rank, args, shared_model, shared_model_target, counter, lock, episodes
     eps_interval = start_eps - end_eps
     epsilon_decay_episodes = 5000
     save_every = 100
-
-    save_dir = "trained_models/adqn_{}/".format(
-        datetime.now().strftime("%d_%m_%Y_%H_%M")
-    )
 
     done = False
     episode_num = 0
