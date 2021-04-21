@@ -2,8 +2,9 @@
 import pygame
 from pygame import Rect, Surface
 import random
-import os
-import kezmenu
+
+# import os
+# import kezmenu
 
 from .tetrominoes import list_of_tetrominoes
 from .tetrominoes import rotate
@@ -15,10 +16,10 @@ class GameOver(Exception):
     """Exception used for its control flow properties"""
 
 
-def get_sound(filename):
-    return pygame.mixer.Sound(
-        os.path.join(os.path.dirname(__file__), "resources", filename)
-    )
+# def get_sound(filename):
+#     return pygame.mixer.Sound(
+#         os.path.join(os.path.dirname(__file__), "resources", filename)
+#     )
 
 
 BGCOLOR = (15, 15, 20)
@@ -64,6 +65,7 @@ class Matris(object):
         it will be placed in `self.matrix`.
         """
 
+        self.num_tetrominoes = 0
         self.next_tetromino = random.choice(list_of_tetrominoes)
         self.set_tetrominoes()
         self.tetromino_rotation = 0
@@ -85,15 +87,16 @@ class Matris(object):
         self.highscore = load_score()
         self.played_highscorebeaten_sound = False
 
-        self.levelup_sound = get_sound("levelup.wav")
-        self.gameover_sound = get_sound("gameover.wav")
-        self.linescleared_sound = get_sound("linecleared.wav")
-        self.highscorebeaten_sound = get_sound("highscorebeaten.wav")
+        # self.levelup_sound = get_sound("levelup.wav")
+        # self.gameover_sound = get_sound("gameover.wav")
+        # self.linescleared_sound = get_sound("linecleared.wav")
+        # self.highscorebeaten_sound = get_sound("highscorebeaten.wav")
 
     def set_tetrominoes(self):
         """
         Sets information for the current and next tetrominos
         """
+        self.num_tetrominoes += 1  # count how many tetrominoes has fallen
         self.current_tetromino = self.next_tetromino
         self.next_tetromino = random.choice(list_of_tetrominoes)
         self.surface_of_next_tetromino = self.construct_surface_of_next_tetromino()
@@ -370,25 +373,25 @@ class Matris(object):
         self.lines += lines_cleared
 
         if lines_cleared:
-            if lines_cleared >= 4:
-                self.linescleared_sound.play()
+            # if lines_cleared >= 4:
+            # self.linescleared_sound.play()
             self.score += 100 * (lines_cleared ** 2) * self.combo
 
             if not self.played_highscorebeaten_sound and self.score > self.highscore:
-                if self.highscore != 0:
-                    self.highscorebeaten_sound.play()
+                # if self.highscore != 0:
+                # self.highscorebeaten_sound.play()
                 self.played_highscorebeaten_sound = True
 
-        if self.lines >= self.level * 10:
-            self.levelup_sound.play()
-            self.level += 1
+        # if self.lines >= self.level * 10:
+        #     # self.levelup_sound.play()
+        #     self.level += 1
 
         self.combo = self.combo + 1 if lines_cleared else 1
 
         self.set_tetrominoes()
 
         if not self.blend():
-            self.gameover_sound.play()
+            # self.gameover_sound.play()
             self.gameover()
 
         self.needs_redraw = True
@@ -510,7 +513,7 @@ class Game(object):
             except GameOver:
                 return
 
-    def redraw(self):
+    def redraw(self, render=False):
         """
         Redraws the information panel and next termoino panel
         """
@@ -521,6 +524,8 @@ class Game(object):
             self.matris.draw_surface()
 
         pygame.display.flip()
+        if render:
+            return pygame.surfarray.array3d(self.matris.surface)
 
     def blit_info(self):
         """
@@ -619,65 +624,65 @@ class Game(object):
         self.screen.blit(area, area.get_rect(top=MATRIS_OFFSET, centerx=TRICKY_CENTERX))
 
 
-class Menu(object):
-    """
-    Creates main menu
-    """
+# class Menu(object):
+#     """
+#     Creates main menu
+#     """
 
-    running = True
+#     running = True
 
-    def main(self, screen):
-        clock = pygame.time.Clock()
-        menu = kezmenu.KezMenu(
-            ["Play!", lambda: Game().main(screen)],
-            ["Quit", lambda: setattr(self, "running", False)],
-        )
-        menu.position = (50, 50)
-        menu.enableEffect(
-            "enlarge-font-on-focus",
-            font=None,
-            size=60,
-            enlarge_factor=1.2,
-            enlarge_time=0.3,
-        )
-        menu.color = (255, 255, 255)
-        menu.focus_color = (40, 200, 40)
+#     def main(self, screen):
+#         clock = pygame.time.Clock()
+#         menu = kezmenu.KezMenu(
+#             ["Play!", lambda: Game().main(screen)],
+#             ["Quit", lambda: setattr(self, "running", False)],
+#         )
+#         menu.position = (50, 50)
+#         menu.enableEffect(
+#             "enlarge-font-on-focus",
+#             font=None,
+#             size=60,
+#             enlarge_factor=1.2,
+#             enlarge_time=0.3,
+#         )
+#         menu.color = (255, 255, 255)
+#         menu.focus_color = (40, 200, 40)
 
-        nightmare = construct_nightmare(screen.get_size())
-        highscoresurf = self.construct_highscoresurf()  # Loads highscore onto menu
+#         nightmare = construct_nightmare(screen.get_size())
+#         highscoresurf = self.construct_highscoresurf()  # Loads highscore onto menu
 
-        timepassed = clock.tick(30) / 1000.0
+#         timepassed = clock.tick(30) / 1000.0
 
-        while self.running:
-            events = pygame.event.get()
+#         while self.running:
+#             events = pygame.event.get()
 
-            for event in events:
-                if event.type == pygame.QUIT:
-                    exit()
+#             for event in events:
+#                 if event.type == pygame.QUIT:
+#                     exit()
 
-            menu.update(events, timepassed)
+#             menu.update(events, timepassed)
 
-            timepassed = clock.tick(30) / 1000.0
+#             timepassed = clock.tick(30) / 1000.0
 
-            if timepassed > 1:  # A game has most likely been played
-                highscoresurf = self.construct_highscoresurf()
+#             if timepassed > 1:  # A game has most likely been played
+#                 highscoresurf = self.construct_highscoresurf()
 
-            screen.blit(nightmare, (0, 0))
-            screen.blit(
-                highscoresurf,
-                highscoresurf.get_rect(right=WIDTH - 50, bottom=HEIGHT - 50),
-            )
-            menu.draw(screen)
-            pygame.display.flip()
+#             screen.blit(nightmare, (0, 0))
+#             screen.blit(
+#                 highscoresurf,
+#                 highscoresurf.get_rect(right=WIDTH - 50, bottom=HEIGHT - 50),
+#             )
+#             menu.draw(screen)
+#             pygame.display.flip()
 
-    def construct_highscoresurf(self):
-        """
-        Loads high score from file
-        """
-        font = pygame.font.Font(None, 50)
-        highscore = load_score()
-        text = "Highscore: {}".format(highscore)
-        return font.render(text, True, (255, 255, 255))
+#     def construct_highscoresurf(self):
+#         """
+#         Loads high score from file
+#         """
+#         font = pygame.font.Font(None, 50)
+#         highscore = load_score()
+#         text = "Highscore: {}".format(highscore)
+#         return font.render(text, True, (255, 255, 255))
 
 
 def construct_nightmare(size):
@@ -711,4 +716,4 @@ if __name__ == "__main__":
 
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption("MaTris")
-    Menu().main(screen)
+    # Menu().main(screen)

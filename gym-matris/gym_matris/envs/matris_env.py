@@ -1,3 +1,4 @@
+import os
 import gym
 from gym import spaces
 
@@ -48,14 +49,16 @@ class GymGame(Game):
 class MatrisEnv(gym.Env):
     metadata = {"render.modes": ["human"]}
 
-    def __init__(self, timestep=1000):
+    def __init__(self, render=False, timestep=1000):
         super(MatrisEnv, self).__init__()
+        if not render:
+            os.environ["SDL_VIDEODRIVER"] = "dummy"
         self.game = GymGame()
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         self.game.init_screen(self.screen)
         self.clock = pygame.time.Clock()
         self.timestep = timestep
-        self.prev_score = 0
+        self.prev_lines_cleared = 0
         self.action_space = spaces.Discrete(len(ACTION_EVENTS))
         self.observation_space = spaces.Box(
             low=0,
@@ -71,9 +74,9 @@ class MatrisEnv(gym.Env):
 
     @property
     def info(self):
-        return {"score": self.matris.score}
+        return {"lines_cleared": self.matris.lines, "matris": self.matris}
 
-    def _matrix_to_nparray(self, matrix):
+    def matrix_to_nparray(self, matrix):
         plane = np.zeros((VISIBLE_MATRIX_HEIGHT, MATRIX_WIDTH), dtype=np.uint8)
         for pos, value in matrix.items():
             real_pos = (pos[0] - HIDDEN_HEIGHT, pos[1])
@@ -89,10 +92,8 @@ class MatrisEnv(gym.Env):
         return matrix
 
     def _convert_board_to_nparray(self, matris):
-        # board = np.zeros((VISIBLE_MATRIX_HEIGHT, MATRIX_WIDTH, 2), dtype=np.uint8)
-
         # popupate the matrix without the current falling piece
-        fixed_board = self._matrix_to_nparray(matris.matrix)
+        fixed_board = self.matrix_to_nparray(matris.matrix)
 
         # populate the falling piece plane
         # blend with an empty matrix, so that only the current piece remains
@@ -102,7 +103,7 @@ class MatrisEnv(gym.Env):
                 (VISIBLE_MATRIX_HEIGHT, MATRIX_WIDTH), dtype=np.uint8
             )
         else:
-            cur_piece_board = self._matrix_to_nparray(cur_piece_matrix)
+            cur_piece_board = self.matrix_to_nparray(cur_piece_matrix)
 
         return np.stack((fixed_board, cur_piece_board), axis=2)
 
@@ -110,7 +111,7 @@ class MatrisEnv(gym.Env):
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         self.game.init_screen(self.screen)
 
-        return self.matris, 0, False, self.info
+        return self._convert_board_to_nparray(self.matris), 0, False, self.info
 
     def step(self, action):
         action_event = ACTION_EVENTS[action]
@@ -132,12 +133,20 @@ class MatrisEnv(gym.Env):
         except GameOver:
             done = True
 
-        reward = self.matris.score - self.prev_score
-        self.prev_score = self.matris.score
-        return self._convert_board_to_nparray(self.matris), reward, done, self.info
+        line_cleared = self.matris.lines - self.prev_lines_cleared
+        reward = 1 + line_cleared ** 2 * 2
+        self.prev_lines_cleared = self.matris.lines
+        if done:
+            reward -= 2
+        return (
+            self._convert_board_to_nparray(self.matris),
+            reward,
+            done,
+            self.info,
+        )
 
     def render(self, mode="human"):
-        self.game.redraw()
+        return self.game.redraw(render=True)
 
     def close(self):
         return
