@@ -1,5 +1,5 @@
 # Reinforcement learning in Tetris
-This is project that aims train an agent to play Tetris. It uses a customized gym environment that is mainly based on a pygame version of Tetris called [MaTris](https://github.com/Uglemat/MaTris).
+This is a project that aims train an agent to play Tetris using reinforcement learning. It uses a customized gym environment that is mainly based on a pygame version of Tetris called [MaTris](https://github.com/Uglemat/MaTris).
 
 ## Install dependencies
 ```
