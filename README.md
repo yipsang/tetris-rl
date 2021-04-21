@@ -20,3 +20,9 @@ python evaluate_dqn_agent.py
 ```
 python validate_dqn_agent.py
 ```
+
+## Run async value network training
+```
+cd asyncDqn
+python train_adqn_agent.py
+```
